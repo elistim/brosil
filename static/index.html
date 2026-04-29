@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Бросил</title>
+  <style>
+    body { margin:0; font-family:Arial,sans-serif; background:linear-gradient(135deg,#0f172a,#1e293b); color:#e5e7eb; }
+    .container { max-width:900px; margin:0 auto; padding:32px 16px; }
+    h1 { text-align:center; font-size:36px; margin-bottom:8px; }
+    .subtitle { text-align:center; color:#94a3b8; margin-bottom:32px; }
+    .cards { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:24px; }
+    .card { background:#111827; border:1px solid #334155; border-radius:18px; padding:22px; text-align:center; }
+    .number { font-size:42px; font-weight:bold; color:#22c55e; }
+    .buttons { display:flex; gap:12px; justify-content:center; margin-bottom:28px; flex-wrap:wrap; }
+    button { background:#2563eb; color:white; border:0; padding:12px 18px; border-radius:12px; cursor:pointer; font-size:16px; }
+    button:hover { background:#1d4ed8; }
+    .reset { background:#dc2626; }
+    .calendar { background:#111827; border:1px solid #334155; border-radius:18px; padding:18px; }
+    .month { display:flex; justify-content:center; align-items:center; gap:16px; font-size:24px; margin-bottom:16px; }
+    .grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+    .day-name { text-align:center; color:#94a3b8; font-weight:bold; padding:8px; }
+    .day { min-height:72px; background:#1e293b; border-radius:12px; padding:8px; font-size:14px; }
+    .today { outline:2px solid #38bdf8; }
+    .ok { margin-top:6px; color:#22c55e; font-size:13px; line-height:1.4; }
+    .empty { opacity:.25; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Бросил</h1>
+  <div class="subtitle">Календарь дней без сигарет и алкоголя</div>
+
+  <div class="cards">
+    <div class="card"><div class="number" id="smokeCount">0</div><div>дней не курил</div></div>
+    <div class="card"><div class="number" id="drinkCount">0</div><div>дней не пил</div></div>
+  </div>
+
+  <div class="buttons">
+    <button onclick="saveToday('smoke')">Сегодня не курил</button>
+    <button onclick="saveToday('drink')">Сегодня не пил</button>
+    <button onclick="saveBoth()">Сегодня не курил и не пил</button>
+    <button class="reset" onclick="resetToday()">Сбросить сегодня</button>
+  </div>
+
+  <div class="calendar">
+    <div class="month">
+      <button onclick="changeMonth(-1)">←</button>
+      <span id="monthTitle"></span>
+      <button onclick="changeMonth(1)">→</button>
+    </div>
+    <div class="grid" id="calendar"></div>
+  </div>
+</div>
+
+<script>
+const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+let data = {};
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth();
+
+function dateKey(date = new Date()) {
+  return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+}
+
+async function loadData() {
+  const r = await fetch('/api/data');
+  data = await r.json();
+  render();
+}
+
+async function saveDay(date, smoke, drink) {
+  await fetch('/api/day', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({date, smoke, drink})
+  });
+  await loadData();
+}
+
+async function saveToday(type) {
+  const key = dateKey();
+  const old = data[key] || {};
+  await saveDay(key, type === 'smoke' || old.smoke || false, type === 'drink' || old.drink || false);
+}
+
+async function saveBoth() {
+  await saveDay(dateKey(), true, true);
+}
+
+async function resetToday() {
+  await saveDay(dateKey(), false, false);
+}
+
+function countDays(type) {
+  let count = 0;
+  const today = new Date();
+  for (let i=0; i<3650; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const item = data[dateKey(d)];
+    if (item && item[type]) count++;
+    else break;
+  }
+  return count;
+}
+
+function changeMonth(delta) {
+  currentMonth += delta;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  render();
+}
+
+function render() {
+  document.getElementById('smokeCount').textContent = countDays('smoke');
+  document.getElementById('drinkCount').textContent = countDays('drink');
+  document.getElementById('monthTitle').textContent = monthNames[currentMonth] + ' ' + currentYear;
+
+  const calendar = document.getElementById('calendar');
+  calendar.innerHTML = '';
+
+  dayNames.forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'day-name';
+    div.textContent = name;
+    calendar.appendChild(div);
+  });
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const lastDay = new Date(currentYear, currentMonth + 1, 0);
+  let offset = firstDay.getDay() - 1;
+  if (offset < 0) offset = 6;
+
+  for (let i=0; i<offset; i++) {
+    const div = document.createElement('div');
+    div.className = 'day empty';
+    calendar.appendChild(div);
+  }
+
+  for (let day=1; day<=lastDay.getDate(); day++) {
+    const d = new Date(currentYear, currentMonth, day);
+    const key = dateKey(d);
+    const item = data[key] || {};
+
+    const div = document.createElement('div');
+    div.className = 'day';
+    if (key === dateKey()) div.classList.add('today');
+
+    let html = '<b>' + day + '</b>';
+    if (item.smoke) html += '<div class="ok">✓ не курил</div>';
+    if (item.drink) html += '<div class="ok">✓ не пил</div>';
+
+    div.innerHTML = html;
+    calendar.appendChild(div);
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
