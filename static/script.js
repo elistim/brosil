@@ -136,6 +136,7 @@ let foxDirection = 1;
 
 let foxMode = 'chase'; // chase | flee | sleep
 let chaseLockUntil = 0;
+let wakeLockUntil = 0;
 
 function preloadFoxFrames() {
   foxFrames.forEach(src => {
@@ -150,9 +151,14 @@ document.addEventListener('mousemove', (e) => {
 });
 
 fox.addEventListener('click', (e) => {
+  e.preventDefault();
   e.stopPropagation();
+
   foxMode = 'chase';
-  chaseLockUntil = Date.now() + 1200;
+  chaseLockUntil = Date.now() + 2000;
+  wakeLockUntil = Date.now() + 2000;
+
+  fox.style.opacity = '1';
 });
 
 let lastFoxFrameTime = 0;
@@ -179,7 +185,12 @@ function moveFox(timestamp) {
   
   fox.style.opacity = '1';
 
-  if (foxMode === 'chase' && dist < 45 && Date.now() > chaseLockUntil) {
+  if (
+    foxMode === 'chase' &&
+    dist < 45 &&
+    Date.now() > chaseLockUntil &&
+    Date.now() > wakeLockUntil
+  ) {
     foxMode = 'flee';
   }
 
@@ -205,22 +216,22 @@ function moveFox(timestamp) {
   
   if (foxX <= 0) {
     foxX = 0;
-    foxMode = 'sleep';
+    if (Date.now() > wakeLockUntil) foxMode = 'sleep';
   }
   
   if (foxX >= maxX) {
     foxX = maxX;
-    foxMode = 'sleep';
+    if (Date.now() > wakeLockUntil) foxMode = 'sleep';
   }
   
   if (foxY <= 0) {
     foxY = 0;
-    foxMode = 'sleep';
+    if (Date.now() > wakeLockUntil) foxMode = 'sleep';
   }
   
   if (foxY >= maxY) {
     foxY = maxY;
-    foxMode = 'sleep';
+    if (Date.now() > wakeLockUntil) foxMode = 'sleep';
   }
 
   if (moveX > 0) foxDirection = 1;
