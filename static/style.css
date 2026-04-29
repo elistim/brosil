@@ -38,30 +38,13 @@ button:hover { background:#1d4ed8; }
   height: 72px;
   object-fit: contain;
   z-index: 1000;
+
   left: 100px;
   top: 100px;
+
   cursor: pointer;
-  pointer-events: auto;
-}
+  pointer-events: auto; /* ВАЖНО */
 
-@keyframes run {
-  from {
-    transform: rotate(0deg) translateX(200px) rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg) translateX(200px) rotate(-360deg);
-  }
-}
-
-.fox {
-  position: fixed;
-  width: 72px;
-  height: 72px;
-  object-fit: contain;
-  z-index: 1000;
-  pointer-events: none;
-  left: 100px;
-  top: 100px;
   transition: transform 0.08s linear;
   filter: drop-shadow(0 8px 12px rgba(0,0,0,.35));
 }
