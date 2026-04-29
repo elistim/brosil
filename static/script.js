@@ -117,3 +117,110 @@ function render() {
 }
 
 loadData();
+
+const fox = document.getElementById('fox');
+
+const foxFrames = [];
+for (let i = 0; i <= 14; i++) {
+  const num = String(i).padStart(2, '0');
+  foxFrames.push(`/foxy/animation/run/foxy-run_${num}.png`);
+}
+
+let foxFrame = 0;
+let foxX = 100;
+let foxY = 100;
+let foxTargetX = 300;
+let foxTargetY = 300;
+
+let foxSpeed = 2.2;
+let boostUntil = 0;
+let mouseActive = false;
+let lastMouseMove = 0;
+let foxDirection = 1;
+
+function preloadFoxFrames() {
+  foxFrames.forEach(src => {
+    const img = new Image();
+    img.src = src;
+  });
+}
+
+function animateFoxFrames() {
+  foxFrame = (foxFrame + 1) % foxFrames.length;
+  fox.src = foxFrames[foxFrame];
+}
+
+function getCalendarPatrolTarget() {
+  const calendar = document.querySelector('.calendar');
+  if (!calendar) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
+  const r = calendar.getBoundingClientRect();
+  const t = Date.now() / 1000;
+  const perimeter = 2 * (r.width + r.height);
+  const p = (t * 120) % perimeter;
+
+  let x, y;
+
+  if (p < r.width) {
+    x = r.left + p;
+    y = r.top - 40;
+  } else if (p < r.width + r.height) {
+    x = r.right + 30;
+    y = r.top + (p - r.width);
+  } else if (p < r.width * 2 + r.height) {
+    x = r.right - (p - r.width - r.height);
+    y = r.bottom + 20;
+  } else {
+    x = r.left - 50;
+    y = r.bottom - (p - r.width * 2 - r.height);
+  }
+
+  return { x, y };
+}
+
+function moveFox() {
+  const now = Date.now();
+
+  if (!mouseActive || now - lastMouseMove > 2500) {
+    const target = getCalendarPatrolTarget();
+    foxTargetX = target.x;
+    foxTargetY = target.y;
+    mouseActive = false;
+  }
+
+  const dx = foxTargetX - foxX;
+  const dy = foxTargetY - foxY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  const speed = now < boostUntil ? foxSpeed * 3.5 : foxSpeed;
+
+  if (dist > 1) {
+    foxX += (dx / dist) * speed;
+    foxY += (dy / dist) * speed;
+  }
+
+  if (dx > 0) foxDirection = 1;
+  if (dx < 0) foxDirection = -1;
+
+  fox.style.left = `${foxX}px`;
+  fox.style.top = `${foxY}px`;
+  fox.style.transform = `scaleX(${foxDirection})`;
+
+  requestAnimationFrame(moveFox);
+}
+
+document.addEventListener('mousemove', (e) => {
+  mouseActive = true;
+  lastMouseMove = Date.now();
+
+  foxTargetX = e.clientX - 36;
+  foxTargetY = e.clientY - 36;
+});
+
+document.addEventListener('click', () => {
+  boostUntil = Date.now() + 1200;
+});
+
+preloadFoxFrames();
+setInterval(animateFoxFrames, 70);
+moveFox();
