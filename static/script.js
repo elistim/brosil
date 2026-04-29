@@ -134,7 +134,7 @@ let targetY = 300;
 let foxSpeed = 3.0;
 let foxDirection = 1;
 
-let foxMode = 'chase'; // chase | flee
+let foxMode = 'chase'; // chase | flee | sleep
 let chaseLockUntil = 0;
 
 function preloadFoxFrames() {
@@ -170,6 +170,15 @@ function moveFox(timestamp) {
   const dy = targetY - foxY;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
+  if (foxMode === 'sleep') {
+  fox.style.opacity = '0.75';
+  fox.style.transform = `scaleX(${foxDirection}) rotate(90deg)`;
+  requestAnimationFrame(moveFox);
+    return;
+  }
+  
+  fox.style.opacity = '1';
+
   if (foxMode === 'chase' && dist < 45 && Date.now() > chaseLockUntil) {
     foxMode = 'flee';
   }
@@ -196,26 +205,22 @@ function moveFox(timestamp) {
   
   if (foxX <= 0) {
     foxX = 0;
-    foxMode = 'chase';
-    chaseLockUntil = Date.now() + 700;
+    foxMode = 'sleep';
   }
   
   if (foxX >= maxX) {
     foxX = maxX;
-    foxMode = 'chase';
-    chaseLockUntil = Date.now() + 700;
+    foxMode = 'sleep';
   }
   
   if (foxY <= 0) {
     foxY = 0;
-    foxMode = 'chase';
-    chaseLockUntil = Date.now() + 700;
+    foxMode = 'sleep';
   }
   
   if (foxY >= maxY) {
     foxY = maxY;
-    foxMode = 'chase';
-    chaseLockUntil = Date.now() + 700;
+    foxMode = 'sleep';
   }
 
   if (moveX > 0) foxDirection = 1;
