@@ -13,6 +13,7 @@ class MarkRequest(BaseModel):
     date: str
     smoke: bool
     drink: bool
+    diary: bool = False
 
 def load_data():
     if not DATA_FILE.exists():
@@ -31,7 +32,8 @@ def save_day(req: MarkRequest):
     data = load_data()
     data[req.date] = {
         "smoke": req.smoke,
-        "drink": req.drink
+        "drink": req.drink,
+        "diary": req.diary
     }
     save_data(data)
     return {"ok": True}
