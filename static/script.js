@@ -135,6 +135,7 @@ let foxSpeed = 3.0;
 let foxDirection = 1;
 
 let foxMode = 'chase'; // chase | flee
+let chaseLockUntil = 0;
 
 function preloadFoxFrames() {
   foxFrames.forEach(src => {
@@ -153,8 +154,10 @@ document.addEventListener('mousemove', (e) => {
   targetY = e.clientY - 36;
 });
 
-fox.addEventListener('click', () => {
+fox.addEventListener('click', (e) => {
+  e.stopPropagation();
   foxMode = 'chase';
+  chaseLockUntil = Date.now() + 1200;
 });
 
 function moveFox() {
@@ -162,7 +165,7 @@ function moveFox() {
   const dy = targetY - foxY;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
-  if (foxMode === 'chase' && dist < 45) {
+  if (foxMode === 'chase' && dist < 45 && Date.now() > chaseLockUntil) {
     foxMode = 'flee';
   }
 
