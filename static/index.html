@@ -39,10 +39,10 @@
   </div>
 
   <div class="buttons">
-    <button onclick="saveToday('smoke')">Сегодня не курил</button>
-    <button onclick="saveToday('drink')">Сегодня не пил</button>
-    <button onclick="saveBoth()">Сегодня не курил и не пил</button>
-    <button class="reset" onclick="resetToday()">Сбросить сегодня</button>
+    <button onclick="saveToday('smoke')">Не курил в выбранный день</button>
+    <button onclick="saveToday('drink')">Не пил в выбранный день</button>
+    <button onclick="saveBoth()">Не курил и не пил</button>
+    <button class="reset" onclick="resetToday()">Сбросить выбранный день</button>
   </div>
 
   <div class="calendar">
@@ -94,25 +94,6 @@ async function saveBoth() {
 
 async function resetToday() {
   await saveDay(selectedDate, false, false);
-}
-
-async function editDay(key) {
-  const current = data[key] || {};
-
-  const smoke = confirm("Не курил в этот день?");
-  const drink = confirm("Не пил в этот день?");
-
-  await fetch('/api/day', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      date: key,
-      smoke: smoke,
-      drink: drink
-    })
-  });
-
-  await loadData();
 }
 
 function countDays(type) {
