@@ -144,11 +144,6 @@ function preloadFoxFrames() {
   });
 }
 
-function animateFoxFrames() {
-  foxFrame = (foxFrame + 1) % foxFrames.length;
-  fox.src = foxFrames[foxFrame];
-}
-
 document.addEventListener('mousemove', (e) => {
   targetX = e.clientX - 36;
   targetY = e.clientY - 36;
@@ -160,7 +155,17 @@ fox.addEventListener('click', (e) => {
   chaseLockUntil = Date.now() + 1200;
 });
 
-function moveFox() {
+let lastFoxFrameTime = 0;
+
+function moveFox(timestamp) {
+  if (!lastFoxFrameTime) lastFoxFrameTime = timestamp;
+
+  if (timestamp - lastFoxFrameTime > 70) {
+    foxFrame = (foxFrame + 1) % foxFrames.length;
+    fox.src = foxFrames[foxFrame];
+    lastFoxFrameTime = timestamp;
+  }
+
   const dx = targetX - foxX;
   const dy = targetY - foxY;
   const dist = Math.sqrt(dx * dx + dy * dy);
@@ -185,8 +190,19 @@ function moveFox() {
   foxX += moveX * foxSpeed;
   foxY += moveY * foxSpeed;
 
-  foxX = Math.max(0, Math.min(window.innerWidth - 72, foxX));
-  foxY = Math.max(0, Math.min(window.innerHeight - 72, foxY));
+  const margin = 80;
+  
+  if (foxMode === 'flee') {
+    if (foxX < -margin) foxX = window.innerWidth + margin;
+    if (foxX > window.innerWidth + margin) foxX = -margin;
+  
+    if (foxY < -margin) foxY = window.innerHeight + margin;
+    if (foxY > window.innerHeight + margin) foxY = -margin;
+  } else {
+    // в режиме преследования оставляем ограничение
+    foxX = Math.max(0, Math.min(window.innerWidth - 72, foxX));
+    foxY = Math.max(0, Math.min(window.innerHeight - 72, foxY));
+  }
 
   if (moveX > 0) foxDirection = 1;
   if (moveX < 0) foxDirection = -1;
@@ -199,5 +215,4 @@ function moveFox() {
 }
 
 preloadFoxFrames();
-setInterval(animateFoxFrames, 70);
-moveFox();
+requestAnimationFrame(moveFox);
