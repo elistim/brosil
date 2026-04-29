@@ -129,14 +129,12 @@ for (let i = 0; i <= 14; i++) {
 let foxFrame = 0;
 let foxX = 100;
 let foxY = 100;
-let foxTargetX = 300;
-let foxTargetY = 300;
-
-let foxSpeed = 2.2;
-let boostUntil = 0;
-let mouseActive = false;
-let lastMouseMove = 0;
+let targetX = 400;
+let targetY = 300;
+let foxSpeed = 3.0;
 let foxDirection = 1;
+
+let foxMode = 'chase'; // chase | flee
 
 function preloadFoxFrames() {
   foxFrames.forEach(src => {
@@ -150,57 +148,45 @@ function animateFoxFrames() {
   fox.src = foxFrames[foxFrame];
 }
 
-function getCalendarPatrolTarget() {
-  const calendar = document.querySelector('.calendar');
-  if (!calendar) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+document.addEventListener('mousemove', (e) => {
+  targetX = e.clientX - 36;
+  targetY = e.clientY - 36;
+});
 
-  const r = calendar.getBoundingClientRect();
-  const t = Date.now() / 1000;
-  const perimeter = 2 * (r.width + r.height);
-  const p = (t * 120) % perimeter;
-
-  let x, y;
-
-  if (p < r.width) {
-    x = r.left + p;
-    y = r.top - 40;
-  } else if (p < r.width + r.height) {
-    x = r.right + 30;
-    y = r.top + (p - r.width);
-  } else if (p < r.width * 2 + r.height) {
-    x = r.right - (p - r.width - r.height);
-    y = r.bottom + 20;
-  } else {
-    x = r.left - 50;
-    y = r.bottom - (p - r.width * 2 - r.height);
-  }
-
-  return { x, y };
-}
+fox.addEventListener('click', () => {
+  foxMode = 'chase';
+});
 
 function moveFox() {
-  const now = Date.now();
-
-  if (!mouseActive || now - lastMouseMove > 2500) {
-    const target = getCalendarPatrolTarget();
-    foxTargetX = target.x;
-    foxTargetY = target.y;
-    mouseActive = false;
-  }
-
-  const dx = foxTargetX - foxX;
-  const dy = foxTargetY - foxY;
+  const dx = targetX - foxX;
+  const dy = targetY - foxY;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
-  const speed = now < boostUntil ? foxSpeed * 3.5 : foxSpeed;
-
-  if (dist > 1) {
-    foxX += (dx / dist) * speed;
-    foxY += (dy / dist) * speed;
+  if (foxMode === 'chase' && dist < 45) {
+    foxMode = 'flee';
   }
 
-  if (dx > 0) foxDirection = 1;
-  if (dx < 0) foxDirection = -1;
+  let moveX = 0;
+  let moveY = 0;
+
+  if (dist > 1) {
+    if (foxMode === 'chase') {
+      moveX = dx / dist;
+      moveY = dy / dist;
+    } else {
+      moveX = -dx / dist;
+      moveY = -dy / dist;
+    }
+  }
+
+  foxX += moveX * foxSpeed;
+  foxY += moveY * foxSpeed;
+
+  foxX = Math.max(0, Math.min(window.innerWidth - 72, foxX));
+  foxY = Math.max(0, Math.min(window.innerHeight - 72, foxY));
+
+  if (moveX > 0) foxDirection = 1;
+  if (moveX < 0) foxDirection = -1;
 
   fox.style.left = `${foxX}px`;
   fox.style.top = `${foxY}px`;
@@ -208,18 +194,6 @@ function moveFox() {
 
   requestAnimationFrame(moveFox);
 }
-
-document.addEventListener('mousemove', (e) => {
-  mouseActive = true;
-  lastMouseMove = Date.now();
-
-  foxTargetX = e.clientX - 36;
-  foxTargetY = e.clientY - 36;
-});
-
-document.addEventListener('click', () => {
-  boostUntil = Date.now() + 1200;
-});
 
 preloadFoxFrames();
 setInterval(animateFoxFrames, 70);
