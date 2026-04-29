@@ -42,6 +42,7 @@
     <button onclick="saveToday('smoke')">Не курил в выбранный день</button>
     <button onclick="saveToday('drink')">Не пил в выбранный день</button>
     <button onclick="saveBoth()">Не курил и не пил</button>
+    <button onclick="saveToday('diary')">Запись в дневнике</button>
     <button class="reset" onclick="resetToday()">Сбросить выбранный день</button>
   </div>
 
@@ -73,11 +74,11 @@ async function loadData() {
   render();
 }
 
-async function saveDay(date, smoke, drink) {
+async function saveDay(date, smoke, drink, diary=false) {
   await fetch('/api/day', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({date, smoke, drink})
+    body:JSON.stringify({date, smoke, drink, diary})
   });
   await loadData();
 }
@@ -85,15 +86,22 @@ async function saveDay(date, smoke, drink) {
 async function saveToday(type) {
   const key = selectedDate;
   const old = data[key] || {};
-  await saveDay(key, type === 'smoke' || old.smoke || false, type === 'drink' || old.drink || false);
+
+  await saveDay(
+    key,
+    type === 'smoke' || old.smoke || false,
+    type === 'drink' || old.drink || false,
+    type === 'diary' || old.diary || false
+  );
 }
 
 async function saveBoth() {
-  await saveDay(selectedDate, true, true);
+  const old = data[selectedDate] || {};
+  await saveDay(selectedDate, true, true, old.diary || false);
 }
 
 async function resetToday() {
-  await saveDay(selectedDate, false, false);
+  await saveDay(selectedDate, false, false, false);
 }
 
 function countDays(type) {
@@ -159,7 +167,8 @@ function render() {
     let html = '<b>' + day + '</b>';
     if (item.smoke) html += '<div class="ok">✓ не курил</div>';
     if (item.drink) html += '<div class="ok">✓ не пил</div>';
-
+    if (item.diary) html += '<div class="ok">✓ дневник</div>';
+    
     div.innerHTML = html;
     calendar.appendChild(div);
   }
