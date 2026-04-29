@@ -2,7 +2,11 @@ body { margin:0; font-family:Arial,sans-serif; background:linear-gradient(135deg
 .container { max-width:900px; margin:0 auto; padding:32px 16px; }
 h1 { text-align:center; font-size:36px; margin-bottom:8px; }
 .subtitle { text-align:center; color:#94a3b8; margin-bottom:32px; }
-.cards { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:24px; }
+.cards {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+}
 .card { background:#111827; border:1px solid #334155; border-radius:18px; padding:22px; text-align:center; }
 .number { font-size:42px; font-weight:bold; color:#22c55e; }
 .buttons { display:flex; gap:12px; justify-content:center; margin-bottom:28px; flex-wrap:wrap; }
