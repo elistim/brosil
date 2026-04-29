@@ -68,6 +68,7 @@ function changeMonth(delta) {
 function render() {
   document.getElementById('smokeCount').textContent = countDays('smoke');
   document.getElementById('drinkCount').textContent = countDays('drink');
+  document.getElementById('diaryCount').textContent = countDays('diary');
   document.getElementById('monthTitle').textContent = monthNames[currentMonth] + ' ' + currentYear;
 
   const calendar = document.getElementById('calendar');
