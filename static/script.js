@@ -190,18 +190,32 @@ function moveFox(timestamp) {
   foxX += moveX * foxSpeed;
   foxY += moveY * foxSpeed;
 
-  const margin = 80;
+  const foxSize = 72;
+  const maxX = window.innerWidth - foxSize;
+  const maxY = window.innerHeight - foxSize;
   
-  if (foxMode === 'flee') {
-    if (foxX < -margin) foxX = window.innerWidth + margin;
-    if (foxX > window.innerWidth + margin) foxX = -margin;
+  if (foxX <= 0) {
+    foxX = 0;
+    foxMode = 'chase';
+    chaseLockUntil = Date.now() + 700;
+  }
   
-    if (foxY < -margin) foxY = window.innerHeight + margin;
-    if (foxY > window.innerHeight + margin) foxY = -margin;
-  } else {
-    // в режиме преследования оставляем ограничение
-    foxX = Math.max(0, Math.min(window.innerWidth - 72, foxX));
-    foxY = Math.max(0, Math.min(window.innerHeight - 72, foxY));
+  if (foxX >= maxX) {
+    foxX = maxX;
+    foxMode = 'chase';
+    chaseLockUntil = Date.now() + 700;
+  }
+  
+  if (foxY <= 0) {
+    foxY = 0;
+    foxMode = 'chase';
+    chaseLockUntil = Date.now() + 700;
+  }
+  
+  if (foxY >= maxY) {
+    foxY = maxY;
+    foxMode = 'chase';
+    chaseLockUntil = Date.now() + 700;
   }
 
   if (moveX > 0) foxDirection = 1;
