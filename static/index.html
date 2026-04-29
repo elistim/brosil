@@ -92,6 +92,25 @@ async function resetToday() {
   await saveDay(dateKey(), false, false);
 }
 
+async function editDay(key) {
+  const current = data[key] || {};
+
+  const smoke = confirm("Не курил в этот день?");
+  const drink = confirm("Не пил в этот день?");
+
+  await fetch('/api/day', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      date: key,
+      smoke: smoke,
+      drink: drink
+    })
+  });
+
+  await loadData();
+}
+
 function countDays(type) {
   let count = 0;
   const today = new Date();
@@ -145,6 +164,7 @@ function render() {
 
     const div = document.createElement('div');
     div.className = 'day';
+    div.onclick = () => editDay(key);
     if (key === dateKey()) div.classList.add('today');
 
     let html = '<b>' + day + '</b>';
