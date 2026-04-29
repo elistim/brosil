@@ -31,3 +31,22 @@ button:hover { background:#1d4ed8; }
 .selected {
   outline: 3px solid #22c55e;
 }
+
+.fox {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  font-size: 32px;
+  transform-origin: -200px 0; /* радиус круга */
+  animation: run 10s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes run {
+  from {
+    transform: rotate(0deg) translateX(200px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(200px) rotate(-360deg);
+  }
+}
