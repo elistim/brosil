@@ -2,8 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Бросил</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=21">
 </head>
 <body>
 <div class="container">
@@ -27,14 +28,6 @@
     </div>
   </div>
 
-  <div class="buttons">
-    <button onclick="saveToday('smoke')">Не курил</button>
-    <button onclick="saveToday('drink')">Не пил</button>
-    <button onclick="saveToday('diary')">Дневник</button>
-    <button onclick="saveBoth()">Не курил и не пил</button>
-    <button class="reset" onclick="resetToday()">Сбросить день</button>
-  </div>
-
   <div class="calendar">
     <div class="month">
       <button onclick="changeMonth(-1)">←</button>
@@ -42,10 +35,36 @@
       <button onclick="changeMonth(1)">→</button>
     </div>
     <div class="grid" id="calendar"></div>
+    <form id="dayEditor" class="day-editor" hidden>
+      <div class="editor-title" id="editorTitle"></div>
+      <label>
+        <input id="editSmoke" type="checkbox">
+        <span>Не курил</span>
+      </label>
+      <label>
+        <input id="editDrink" type="checkbox">
+        <span>Не пил</span>
+      </label>
+      <label>
+        <input id="editDiary" type="checkbox">
+        <span>Дневник</span>
+      </label>
+      <div class="editor-actions">
+        <button type="submit" class="confirm">Подтвердить</button>
+        <button id="editorCancel" class="secondary" type="button">Отмена</button>
+        <button id="editorReset" class="reset" type="button">Сбросить</button>
+      </div>
+    </form>
   </div>
 </div>
 
+<div id="foxChair" class="fox-chair" aria-hidden="true">
+  <div class="chair-back"></div>
+  <div class="chair-arms"></div>
+  <div class="chair-seat"></div>
+  <div class="chair-base"></div>
+</div>
 <img id="fox" class="fox" src="/foxy/animation/run/foxy-run_00.png" alt="fox">
-<script src="/script.js"></script>
+<script src="/script.js?v=21"></script>
 </body>
 </html>

@@ -1,12 +1,15 @@
 const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
 let data = {};
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
-let selectedDate = dateKey();
+let selectedDate = null;
 
 function dateKey(date = new Date()) {
-  return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+  return date.getFullYear() + '-' +
+    String(date.getMonth()+1).padStart(2,'0') + '-' +
+    String(date.getDate()).padStart(2,'0');
 }
 
 async function loadData() {
@@ -42,7 +45,10 @@ async function saveBoth() {
 }
 
 async function resetToday() {
+  if (!selectedDate) return;
   await saveDay(selectedDate, false, false, false);
+  selectedDate = null;
+  render();
 }
 
 function countDays(type) {
@@ -92,6 +98,8 @@ function render() {
     calendar.appendChild(div);
   }
 
+  const isMobile = window.innerWidth <= 900;
+
   for (let day=1; day<=lastDay.getDate(); day++) {
     const d = new Date(currentYear, currentMonth, day);
     const key = dateKey(d);
@@ -103,22 +111,76 @@ function render() {
       selectedDate = key;
       render();
     };
+
     if (key === dateKey()) div.classList.add('today');
     if (key === selectedDate) div.classList.add('selected');
 
     let html = '<b>' + day + '</b>';
-    if (item.smoke) html += '<div class="ok">✓ не курил</div>';
-    if (item.drink) html += '<div class="ok">✓ не пил</div>';
-    if (item.diary) html += '<div class="ok">✓ дневник</div>';
-    
+
+    if (item.smoke) {
+      html += `<div class="ok">${isMobile ? '🚭' : '✓ не курил'}</div>`;
+    }
+
+    if (item.drink) {
+      html += `<div class="ok">${isMobile ? '🍺×' : '✓ не пил'}</div>`;
+    }
+
+    if (item.diary) {
+      html += `<div class="ok">${isMobile ? '📓' : '✓ дневник'}</div>`;
+    }
+
     div.innerHTML = html;
     calendar.appendChild(div);
   }
+
+  renderDayEditor();
 }
+
+function renderDayEditor() {
+  const editor = document.getElementById('dayEditor');
+  if (!selectedDate) {
+    editor.hidden = true;
+    return;
+  }
+
+  const item = data[selectedDate] || {};
+  const date = new Date(selectedDate + 'T00:00:00');
+  document.getElementById('editorTitle').textContent = date.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
+  document.getElementById('editSmoke').checked = Boolean(item.smoke);
+  document.getElementById('editDrink').checked = Boolean(item.drink);
+  document.getElementById('editDiary').checked = Boolean(item.diary);
+  editor.hidden = false;
+}
+
+document.getElementById('dayEditor').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!selectedDate) return;
+
+  await saveDay(
+    selectedDate,
+    document.getElementById('editSmoke').checked,
+    document.getElementById('editDrink').checked,
+    document.getElementById('editDiary').checked
+  );
+  selectedDate = null;
+  render();
+});
+
+document.getElementById('editorCancel').addEventListener('click', () => {
+  selectedDate = null;
+  render();
+});
+
+document.getElementById('editorReset').addEventListener('click', resetToday);
 
 loadData();
 
 const fox = document.getElementById('fox');
+const foxChair = document.getElementById('foxChair');
 
 const foxFrames = [];
 for (let i = 0; i <= 14; i++) {
@@ -126,49 +188,102 @@ for (let i = 0; i <= 14; i++) {
   foxFrames.push(`/foxy/animation/run/foxy-run_${num}.png`);
 }
 
+const foxIdleFrames = [];
+for (let i = 0; i <= 14; i++) {
+  const num = String(i).padStart(2, '0');
+  foxIdleFrames.push(`/foxy/animation/idle/foxy-idle_${num}.png`);
+}
+
 let foxFrame = 0;
 let foxX = 100;
-let foxY = 100;
-let targetX = 400;
-let targetY = 300;
-let foxSpeed = 3.0;
+let foxY = window.innerHeight - 128;
+let targetX = 0;
+let targetY = 0;
+let foxSpeed = 2.8;
 let foxDirection = 1;
 
-let foxMode = 'chase'; // chase | flee | sleep
-let chaseLockUntil = 0;
-let wakeLockUntil = 0;
+let foxMode = 'rest';
+const catchDistance = 18;
+let caughtUntil = 0;
 
 function preloadFoxFrames() {
-  foxFrames.forEach(src => {
+  [...foxFrames, ...foxIdleFrames].forEach(src => {
     const img = new Image();
     img.src = src;
   });
 }
 
-document.addEventListener('mousemove', (e) => {
-  targetX = e.clientX - 36;
-  targetY = e.clientY - 36;
+function foxSize() {
+  return window.matchMedia('(max-width: 600px)').matches ? 44 : 72;
+}
+
+function updateChairTarget() {
+  const chair = foxChair.getBoundingClientRect();
+  const size = foxSize();
+  const seatAnchor = {
+    x: chair.left + chair.width * 0.52,
+    y: chair.top + chair.height * 0.69,
+  };
+  const foxSitAnchor = {
+    x: size * 0.5,
+    y: size * 0.78,
+  };
+
+  targetX = seatAnchor.x - foxSitAnchor.x;
+  targetY = seatAnchor.y - foxSitAnchor.y;
+}
+
+function updatePlayTarget(event) {
+  targetX = event.clientX - foxSize() / 2;
+  targetY = event.clientY - foxSize() / 2;
+}
+
+function startPlay(event) {
+  updatePlayTarget(event);
+  foxMode = 'ready';
+  fox.style.opacity = '1';
+}
+
+document.addEventListener('mousemove', (event) => {
+  if (foxMode === 'ready' || foxMode === 'play') {
+    updatePlayTarget(event);
+  }
 });
+document.addEventListener('touchmove', (event) => {
+  if (event.touches[0] && (foxMode === 'ready' || foxMode === 'play')) {
+    updatePlayTarget(event.touches[0]);
+  }
+}, { passive: true });
 
 fox.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  foxMode = 'chase';
-  chaseLockUntil = Date.now() + 2000;
-  wakeLockUntil = Date.now() + 2000;
-
-  fox.style.opacity = '1';
+  startPlay(e);
 });
+
+fox.addEventListener('touchstart', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (event.touches[0]) {
+    startPlay(event.touches[0]);
+  }
+}, { passive: false });
 
 let lastFoxFrameTime = 0;
 
 function moveFox(timestamp) {
   if (!lastFoxFrameTime) lastFoxFrameTime = timestamp;
 
+  if (foxMode === 'go-rest' || foxMode === 'rest') {
+    updateChairTarget();
+  }
+
   if (timestamp - lastFoxFrameTime > 70) {
-    foxFrame = (foxFrame + 1) % foxFrames.length;
-    fox.src = foxFrames[foxFrame];
+    const frames = foxMode === 'play' || foxMode === 'go-rest' ? foxFrames : foxIdleFrames;
+    foxFrame = (foxFrame + 1) % frames.length;
+    fox.src = frames[foxFrame];
     lastFoxFrameTime = timestamp;
   }
 
@@ -176,63 +291,75 @@ function moveFox(timestamp) {
   const dy = targetY - foxY;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
-  if (foxMode === 'sleep') {
-  fox.style.opacity = '0.75';
-  fox.style.transform = `scaleX(${foxDirection}) rotate(90deg)`;
-  requestAnimationFrame(moveFox);
+  if (foxMode === 'rest') {
+    foxX = targetX;
+    foxY = targetY;
+    fox.style.left = `${foxX}px`;
+    fox.style.top = `${foxY}px`;
+    fox.style.opacity = '1';
+    fox.style.transform = `scaleX(${foxDirection}) rotate(-8deg)`;
+    requestAnimationFrame(moveFox);
     return;
   }
-  
+
   fox.style.opacity = '1';
 
-  if (
-    foxMode === 'chase' &&
-    dist < 45 &&
-    Date.now() > chaseLockUntil &&
-    Date.now() > wakeLockUntil
-  ) {
-    foxMode = 'flee';
-  }
-
-  let moveX = 0;
-  let moveY = 0;
-
-  if (dist > 1) {
-    if (foxMode === 'chase') {
-      moveX = dx / dist;
-      moveY = dy / dist;
+  if (foxMode === 'ready') {
+    if (dist > catchDistance * 2) {
+      foxMode = 'play';
     } else {
-      moveX = -dx / dist;
-      moveY = -dy / dist;
+      fox.style.left = `${foxX}px`;
+      fox.style.top = `${foxY}px`;
+      fox.style.transform = `scaleX(${foxDirection})`;
+      requestAnimationFrame(moveFox);
+      return;
     }
   }
 
-  foxX += moveX * foxSpeed;
-  foxY += moveY * foxSpeed;
+  if (foxMode === 'play' && dist < catchDistance) {
+    foxMode = 'caught';
+    caughtUntil = Date.now() + 900;
+    foxFrame = 0;
+    fox.src = foxIdleFrames[0];
+    requestAnimationFrame(moveFox);
+    return;
+  }
 
-  const foxSize = 72;
-  const maxX = window.innerWidth - foxSize;
-  const maxY = window.innerHeight - foxSize;
-  
-  if (foxX <= 0) {
-    foxX = 0;
-    if (Date.now() > wakeLockUntil) foxMode = 'sleep';
+  if (foxMode === 'caught') {
+    if (Date.now() >= caughtUntil) {
+      foxMode = 'go-rest';
+      updateChairTarget();
+    } else {
+      fox.style.left = `${foxX}px`;
+      fox.style.top = `${foxY}px`;
+      fox.style.transform = `scaleX(${foxDirection})`;
+      requestAnimationFrame(moveFox);
+      return;
+    }
   }
-  
-  if (foxX >= maxX) {
-    foxX = maxX;
-    if (Date.now() > wakeLockUntil) foxMode = 'sleep';
+
+  if (foxMode === 'go-rest' && dist < 4) {
+    foxMode = 'rest';
+    foxFrame = 0;
+    fox.src = foxIdleFrames[0];
+    requestAnimationFrame(moveFox);
+    return;
   }
-  
-  if (foxY <= 0) {
-    foxY = 0;
-    if (Date.now() > wakeLockUntil) foxMode = 'sleep';
+
+  if (dist < 1) {
+    fox.style.left = `${foxX}px`;
+    fox.style.top = `${foxY}px`;
+    fox.style.transform = `scaleX(${foxDirection})`;
+    requestAnimationFrame(moveFox);
+    return;
   }
-  
-  if (foxY >= maxY) {
-    foxY = maxY;
-    if (Date.now() > wakeLockUntil) foxMode = 'sleep';
-  }
+
+  const step = Math.min(foxSpeed, dist);
+  const moveX = dx / dist;
+  const moveY = dy / dist;
+
+  foxX += moveX * step;
+  foxY += moveY * step;
 
   if (moveX > 0) foxDirection = 1;
   if (moveX < 0) foxDirection = -1;
@@ -245,4 +372,5 @@ function moveFox(timestamp) {
 }
 
 preloadFoxFrames();
+updateChairTarget();
 requestAnimationFrame(moveFox);
