@@ -4,27 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Бросил</title>
-  <link rel="stylesheet" href="/style.css?v=21">
+  <link rel="stylesheet" href="/style.css?v=23">
 </head>
 <body>
 <div class="container">
   <h1>Бросил</h1>
-  <div class="subtitle">Календарь дней без сигарет, алкоголя и дневника</div>
+  <div class="subtitle">Календарь дней без сигарет, алкоголя, дневника и финансов</div>
 
   <div class="cards">
     <div class="card">
       <div class="number" id="smokeCount">0</div>
       <div>дней не курил</div>
+      <div class="record">рекорд: <span id="smokeRecord">0</span></div>
     </div>
   
     <div class="card">
       <div class="number" id="drinkCount">0</div>
       <div>дней не пил</div>
+      <div class="record">рекорд: <span id="drinkRecord">0</span></div>
     </div>
   
     <div class="card">
       <div class="number" id="diaryCount">0</div>
       <div>дней вел дневник</div>
+      <div class="record">рекорд: <span id="diaryRecord">0</span></div>
+    </div>
+
+    <div class="card">
+      <div class="number" id="financeCount">0</div>
+      <div>дней вел финансы</div>
+      <div class="record">рекорд: <span id="financeRecord">0</span></div>
     </div>
   </div>
 
@@ -49,6 +58,10 @@
         <input id="editDiary" type="checkbox">
         <span>Дневник</span>
       </label>
+      <label>
+        <input id="editFinance" type="checkbox">
+        <span>Финансы</span>
+      </label>
       <div class="editor-actions">
         <button type="submit" class="confirm">Подтвердить</button>
         <button id="editorCancel" class="secondary" type="button">Отмена</button>
@@ -65,6 +78,6 @@
   <div class="chair-base"></div>
 </div>
 <img id="fox" class="fox" src="/foxy/animation/run/foxy-run_00.png" alt="fox">
-<script src="/script.js?v=21"></script>
+<script src="/script.js?v=23"></script>
 </body>
 </html>

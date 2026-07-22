@@ -18,11 +18,11 @@ async function loadData() {
   render();
 }
 
-async function saveDay(date, smoke, drink, diary=false) {
+async function saveDay(date, smoke, drink, diary=false, finance=false) {
   await fetch('/api/day', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({date, smoke, drink, diary})
+    body:JSON.stringify({date, smoke, drink, diary, finance})
   });
   await loadData();
 }
@@ -35,18 +35,19 @@ async function saveToday(type) {
     key,
     type === 'smoke' || old.smoke || false,
     type === 'drink' || old.drink || false,
-    type === 'diary' || old.diary || false
+    type === 'diary' || old.diary || false,
+    type === 'finance' || old.finance || false
   );
 }
 
 async function saveBoth() {
   const old = data[selectedDate] || {};
-  await saveDay(selectedDate, true, true, old.diary || false);
+  await saveDay(selectedDate, true, true, old.diary || false, old.finance || false);
 }
 
 async function resetToday() {
   if (!selectedDate) return;
-  await saveDay(selectedDate, false, false, false);
+  await saveDay(selectedDate, false, false, false, false);
   selectedDate = null;
   render();
 }
@@ -64,6 +65,32 @@ function countDays(type) {
   return count;
 }
 
+function recordDays(type) {
+  const days = Object.keys(data)
+    .filter(key => data[key] && data[key][type])
+    .sort();
+
+  let record = 0;
+  let current = 0;
+  let previous = null;
+
+  days.forEach(key => {
+    const date = new Date(key + 'T00:00:00');
+
+    if (previous) {
+      const diffDays = Math.round((date - previous) / 86400000);
+      current = diffDays === 1 ? current + 1 : 1;
+    } else {
+      current = 1;
+    }
+
+    if (current > record) record = current;
+    previous = date;
+  });
+
+  return record;
+}
+
 function changeMonth(delta) {
   currentMonth += delta;
   if (currentMonth < 0) { currentMonth = 11; currentYear--; }
@@ -75,6 +102,11 @@ function render() {
   document.getElementById('smokeCount').textContent = countDays('smoke');
   document.getElementById('drinkCount').textContent = countDays('drink');
   document.getElementById('diaryCount').textContent = countDays('diary');
+  document.getElementById('financeCount').textContent = countDays('finance');
+  document.getElementById('smokeRecord').textContent = recordDays('smoke');
+  document.getElementById('drinkRecord').textContent = recordDays('drink');
+  document.getElementById('diaryRecord').textContent = recordDays('diary');
+  document.getElementById('financeRecord').textContent = recordDays('finance');
   document.getElementById('monthTitle').textContent = monthNames[currentMonth] + ' ' + currentYear;
 
   const calendar = document.getElementById('calendar');
@@ -129,6 +161,10 @@ function render() {
       html += `<div class="ok">${isMobile ? '📓' : '✓ дневник'}</div>`;
     }
 
+    if (item.finance) {
+      html += `<div class="ok">${isMobile ? '₽' : '✓ финансы'}</div>`;
+    }
+
     div.innerHTML = html;
     calendar.appendChild(div);
   }
@@ -153,6 +189,7 @@ function renderDayEditor() {
   document.getElementById('editSmoke').checked = Boolean(item.smoke);
   document.getElementById('editDrink').checked = Boolean(item.drink);
   document.getElementById('editDiary').checked = Boolean(item.diary);
+  document.getElementById('editFinance').checked = Boolean(item.finance);
   editor.hidden = false;
 }
 
@@ -164,7 +201,8 @@ document.getElementById('dayEditor').addEventListener('submit', async (event) =>
     selectedDate,
     document.getElementById('editSmoke').checked,
     document.getElementById('editDrink').checked,
-    document.getElementById('editDiary').checked
+    document.getElementById('editDiary').checked,
+    document.getElementById('editFinance').checked
   );
   selectedDate = null;
   render();

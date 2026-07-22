@@ -45,7 +45,7 @@ h1 {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 42px;
 }
@@ -63,6 +63,13 @@ h1 {
   font-size: 42px;
   font-weight: bold;
   color: var(--accent-2);
+}
+
+.record {
+  margin-top: 10px;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
 }
 
 button {
@@ -330,7 +337,7 @@ button:hover {
   }
 
   .cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     margin-bottom: 18px;
   }
@@ -344,7 +351,13 @@ button:hover {
   .number {
     font-size: 34px;
     line-height: 1;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+  }
+
+  .record {
+    margin-top: 6px;
+    font-size: 11px;
+    line-height: 1.15;
   }
 
   .card div:last-child,
