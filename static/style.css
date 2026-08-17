@@ -45,9 +45,9 @@ h1 {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
-  margin-bottom: 42px;
+  margin-bottom: 24px;
 }
 
 .card {
@@ -70,6 +70,124 @@ h1 {
   color: var(--accent);
   font-size: 14px;
   font-weight: 700;
+}
+
+.tracker-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.tracker-heading h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.compact {
+  min-height: auto;
+  padding: 9px 14px;
+  font-size: 14px;
+}
+
+.empty-trackers {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.tracker-manager {
+  margin: 0 0 30px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(23, 35, 45, 0.92);
+}
+
+.tracker-manager[hidden] {
+  display: none;
+}
+
+.manager-title {
+  margin-bottom: 14px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.tracker-form label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tracker-form-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.tracker-form input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 13px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+
+.tracker-form input:focus {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(103, 213, 181, 0.12);
+}
+
+.tracker-message {
+  min-height: 20px;
+  margin: 10px 0 4px;
+  color: var(--accent-2);
+  font-size: 13px;
+}
+
+.tracker-message.error {
+  color: var(--danger);
+}
+
+.tracker-list {
+  display: grid;
+  gap: 7px;
+}
+
+.tracker-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 7px 8px 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+
+.danger-link {
+  min-height: auto;
+  padding: 7px 10px;
+  background: rgba(239, 111, 108, 0.12);
+  color: #ffaaa7;
+  font-size: 13px;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 button {
@@ -200,6 +318,13 @@ button:hover {
   padding: 0 12px;
   background: var(--panel-2);
   cursor: pointer;
+}
+
+.tracker-checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  grid-column: 1 / -1;
 }
 
 .day-editor input {
@@ -342,6 +467,29 @@ button:hover {
     margin-bottom: 18px;
   }
 
+  .tracker-heading {
+    margin-bottom: 10px;
+  }
+
+  .tracker-heading h2 {
+    font-size: 18px;
+  }
+
+  .tracker-heading .compact {
+    width: auto;
+    min-height: 36px;
+    padding: 7px 11px;
+  }
+
+  .tracker-manager {
+    margin-bottom: 18px;
+    padding: 12px;
+  }
+
+  .tracker-form-row {
+    grid-template-columns: 1fr;
+  }
+
   .card {
     min-height: 92px;
     padding: 12px 6px;
@@ -442,6 +590,7 @@ button:hover {
   }
 
   .day-editor,
+  .tracker-checks,
   .editor-actions {
     grid-template-columns: 1fr;
   }

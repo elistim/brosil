@@ -2,6 +2,7 @@ const monthNames = ['Январь','Февраль','Март','Апрель','�
 const dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
 let data = {};
+let trackers = [];
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 let selectedDate = null;
@@ -12,44 +13,46 @@ function dateKey(date = new Date()) {
     String(date.getDate()).padStart(2,'0');
 }
 
-async function loadData() {
-  const r = await fetch('/api/data');
-  data = await r.json();
-  render();
+async function apiRequest(url, options = {}) {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    let message = 'Не удалось выполнить действие';
+    try {
+      const body = await response.json();
+      if (body.detail) message = body.detail;
+    } catch (_) {
+      // Сервер может вернуть пустой или не-JSON ответ.
+    }
+    if (response.status === 401) message = 'Нужна авторизация для изменения счётчиков';
+    throw new Error(message);
+  }
+  if (response.status === 204) return null;
+  return response.json();
 }
 
-async function saveDay(date, smoke, drink, diary=false, finance=false) {
-  await fetch('/api/day', {
+async function loadData() {
+  [data, trackers] = await Promise.all([
+    apiRequest('/api/data'),
+    apiRequest('/api/trackers')
+  ]);
+  render();
+  renderTrackerManager();
+}
+
+async function saveDay(date, values) {
+  await apiRequest('/api/day', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({date, smoke, drink, diary, finance})
+    body:JSON.stringify({date, values})
   });
-  await loadData();
-}
-
-async function saveToday(type) {
-  const key = selectedDate;
-  const old = data[key] || {};
-
-  await saveDay(
-    key,
-    type === 'smoke' || old.smoke || false,
-    type === 'drink' || old.drink || false,
-    type === 'diary' || old.diary || false,
-    type === 'finance' || old.finance || false
-  );
-}
-
-async function saveBoth() {
-  const old = data[selectedDate] || {};
-  await saveDay(selectedDate, true, true, old.diary || false, old.finance || false);
 }
 
 async function resetToday() {
   if (!selectedDate) return;
-  await saveDay(selectedDate, false, false, false, false);
+  const values = Object.fromEntries(trackers.map(tracker => [tracker.id, false]));
+  await saveDay(selectedDate, values);
   selectedDate = null;
-  render();
+  await loadData();
 }
 
 function countDays(type) {
@@ -98,15 +101,41 @@ function changeMonth(delta) {
   render();
 }
 
+function renderCards() {
+  const cards = document.getElementById('trackerCards');
+  cards.innerHTML = '';
+
+  if (!trackers.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-trackers';
+    empty.textContent = 'Пока нет счётчиков. Нажмите «Настроить», чтобы добавить первый.';
+    cards.appendChild(empty);
+    return;
+  }
+
+  trackers.forEach(tracker => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const number = document.createElement('div');
+    number.className = 'number';
+    number.textContent = countDays(tracker.id);
+
+    const label = document.createElement('div');
+    label.className = 'card-label';
+    label.textContent = tracker.cardLabel || `дней: ${tracker.name}`;
+
+    const record = document.createElement('div');
+    record.className = 'record';
+    record.textContent = `рекорд: ${recordDays(tracker.id)}`;
+
+    card.append(number, label, record);
+    cards.appendChild(card);
+  });
+}
+
 function render() {
-  document.getElementById('smokeCount').textContent = countDays('smoke');
-  document.getElementById('drinkCount').textContent = countDays('drink');
-  document.getElementById('diaryCount').textContent = countDays('diary');
-  document.getElementById('financeCount').textContent = countDays('finance');
-  document.getElementById('smokeRecord').textContent = recordDays('smoke');
-  document.getElementById('drinkRecord').textContent = recordDays('drink');
-  document.getElementById('diaryRecord').textContent = recordDays('diary');
-  document.getElementById('financeRecord').textContent = recordDays('finance');
+  renderCards();
   document.getElementById('monthTitle').textContent = monthNames[currentMonth] + ' ' + currentYear;
 
   const calendar = document.getElementById('calendar');
@@ -147,25 +176,20 @@ function render() {
     if (key === dateKey()) div.classList.add('today');
     if (key === selectedDate) div.classList.add('selected');
 
-    let html = '<b>' + day + '</b>';
+    const number = document.createElement('b');
+    number.textContent = day;
+    div.appendChild(number);
 
-    if (item.smoke) {
-      html += `<div class="ok">${isMobile ? '🚭' : '✓ не курил'}</div>`;
-    }
+    trackers.forEach(tracker => {
+      if (!item[tracker.id]) return;
+      const mark = document.createElement('div');
+      mark.className = 'ok';
+      mark.textContent = isMobile
+        ? (tracker.icon || '✓')
+        : `✓ ${tracker.shortLabel || tracker.name}`;
+      div.appendChild(mark);
+    });
 
-    if (item.drink) {
-      html += `<div class="ok">${isMobile ? '🍺×' : '✓ не пил'}</div>`;
-    }
-
-    if (item.diary) {
-      html += `<div class="ok">${isMobile ? '📓' : '✓ дневник'}</div>`;
-    }
-
-    if (item.finance) {
-      html += `<div class="ok">${isMobile ? '₽' : '✓ финансы'}</div>`;
-    }
-
-    div.innerHTML = html;
     calendar.appendChild(div);
   }
 
@@ -186,10 +210,29 @@ function renderDayEditor() {
     month: 'long',
     year: 'numeric'
   });
-  document.getElementById('editSmoke').checked = Boolean(item.smoke);
-  document.getElementById('editDrink').checked = Boolean(item.drink);
-  document.getElementById('editDiary').checked = Boolean(item.diary);
-  document.getElementById('editFinance').checked = Boolean(item.finance);
+
+  const checks = document.getElementById('trackerChecks');
+  checks.innerHTML = '';
+  if (!trackers.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-trackers';
+    empty.textContent = 'Сначала добавьте хотя бы один счётчик.';
+    checks.appendChild(empty);
+  }
+
+  trackers.forEach(tracker => {
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    const text = document.createElement('span');
+
+    input.type = 'checkbox';
+    input.dataset.trackerId = tracker.id;
+    input.checked = Boolean(item[tracker.id]);
+    text.textContent = tracker.name;
+
+    label.append(input, text);
+    checks.appendChild(label);
+  });
   editor.hidden = false;
 }
 
@@ -197,15 +240,18 @@ document.getElementById('dayEditor').addEventListener('submit', async (event) =>
   event.preventDefault();
   if (!selectedDate) return;
 
-  await saveDay(
-    selectedDate,
-    document.getElementById('editSmoke').checked,
-    document.getElementById('editDrink').checked,
-    document.getElementById('editDiary').checked,
-    document.getElementById('editFinance').checked
-  );
-  selectedDate = null;
-  render();
+  const values = {};
+  document.querySelectorAll('#trackerChecks input[data-tracker-id]').forEach(input => {
+    values[input.dataset.trackerId] = input.checked;
+  });
+
+  try {
+    await saveDay(selectedDate, values);
+    selectedDate = null;
+    await loadData();
+  } catch (error) {
+    alert(error.message);
+  }
 });
 
 document.getElementById('editorCancel').addEventListener('click', () => {
@@ -215,7 +261,88 @@ document.getElementById('editorCancel').addEventListener('click', () => {
 
 document.getElementById('editorReset').addEventListener('click', resetToday);
 
-loadData();
+const trackerManager = document.getElementById('trackerManager');
+const trackerManagerToggle = document.getElementById('trackerManagerToggle');
+const trackerMessage = document.getElementById('trackerMessage');
+
+function setTrackerMessage(message = '', isError = false) {
+  trackerMessage.textContent = message;
+  trackerMessage.classList.toggle('error', isError);
+}
+
+function renderTrackerManager() {
+  const list = document.getElementById('trackerList');
+  list.innerHTML = '';
+
+  trackers.forEach(tracker => {
+    const row = document.createElement('div');
+    row.className = 'tracker-list-item';
+
+    const name = document.createElement('span');
+    name.textContent = tracker.name;
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'danger-link';
+    remove.textContent = 'Удалить';
+    remove.addEventListener('click', async () => {
+      const confirmed = confirm(`Удалить счётчик «${tracker.name}» и всю его историю?`);
+      if (!confirmed) return;
+
+      remove.disabled = true;
+      setTrackerMessage('Удаляю…');
+      try {
+        await apiRequest(`/api/manage/trackers/${encodeURIComponent(tracker.id)}`, {
+          method: 'DELETE'
+        });
+        setTrackerMessage(`Счётчик «${tracker.name}» удалён`);
+        await loadData();
+      } catch (error) {
+        setTrackerMessage(error.message, true);
+        remove.disabled = false;
+      }
+    });
+
+    row.append(name, remove);
+    list.appendChild(row);
+  });
+}
+
+trackerManagerToggle.addEventListener('click', () => {
+  trackerManager.hidden = !trackerManager.hidden;
+  trackerManagerToggle.textContent = trackerManager.hidden ? 'Настроить' : 'Закрыть';
+  if (!trackerManager.hidden) document.getElementById('trackerName').focus();
+});
+
+document.getElementById('trackerForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const input = document.getElementById('trackerName');
+  const submit = event.currentTarget.querySelector('button[type="submit"]');
+  const name = input.value.trim();
+  if (!name) return;
+
+  submit.disabled = true;
+  setTrackerMessage('Добавляю…');
+  try {
+    await apiRequest('/api/manage/trackers', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name})
+    });
+    input.value = '';
+    setTrackerMessage(`Счётчик «${name}» добавлен`);
+    await loadData();
+  } catch (error) {
+    setTrackerMessage(error.message, true);
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+loadData().catch(error => {
+  setTrackerMessage(error.message, true);
+  console.error(error);
+});
 
 const fox = document.getElementById('fox');
 const foxChair = document.getElementById('foxChair');

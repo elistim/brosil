@@ -1,9 +1,10 @@
 # 🦊 Brosil — трекер привычек
 
-Простой веб-сервис для отслеживания:
+Простой веб-сервис с настраиваемыми счётчиками для отслеживания:
 - 🚭 дней без курения
 - 🍺 дней без алкоголя
 - 📓 ведения дневника
+- 📚 учёбы и любых других пользовательских привычек
 
 ---
 
@@ -12,6 +13,7 @@
 - 📅 Календарь с отметками по дням
 - 🔢 Счётчик непрерывной серии (streak)
 - 🎯 Выбор любого дня и редактирование
+- ➕ Добавление и удаление собственных счётчиков
 - 💾 Сохранение данных в `data.json`
 - 🌐 Доступ с любых устройств
 - 🦊 Интерактивный лисёнок
@@ -85,9 +87,9 @@ data.json:
 - засыпает у края
 - просыпается по клику
 
-## 🔐 Защита редактирования через nginx Basic Auth
+## 🔐 Приватный доступ через nginx Basic Auth
 
-Просмотр календаря открыт всем, а изменение данных закрыто паролем на уровне nginx.
+Весь рабочий сервис закрыт паролем на уровне nginx: главная страница, календарь и все API-маршруты. Публичная демонстрация с вымышленными данными находится отдельно по адресу `https://elitepuma.ru/demo/brosil/` и не подключена к базе Brosil.
 
 ### 1. Установка утилиты
 
@@ -96,36 +98,10 @@ sudo apt install apache2-utils -y
 sudo htpasswd -c /etc/nginx/.brosil_auth elisey
 ```
 
-## Config nginx
+## Конфигурация nginx
 
 ```bash
-sudo nano /etc/nginx/sites-available/brosil
-```
-
-```
-server {
-    server_name brosil.elitepuma.ru;
-
-    location / {
-        proxy_pass http://127.0.0.1:8090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    location /api/day {
-        auth_basic "Edit calendar";
-        auth_basic_user_file /etc/nginx/.brosil_auth;
-
-        proxy_pass http://127.0.0.1:8090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    listen 80;
-}
-```
-
-```bash
+sudo cp deploy/nginx-brosil /etc/nginx/sites-available/brosil
 sudo nginx -t
 sudo systemctl reload nginx
 ```
