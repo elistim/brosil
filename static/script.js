@@ -350,13 +350,13 @@ const foxChair = document.getElementById('foxChair');
 const foxFrames = [];
 for (let i = 0; i <= 14; i++) {
   const num = String(i).padStart(2, '0');
-  foxFrames.push(`/foxy/animation/run/foxy-run_${num}.png`);
+  foxFrames.push(`/foxy/animation/run/foxy-run_${num}.webp`);
 }
 
 const foxIdleFrames = [];
 for (let i = 0; i <= 14; i++) {
   const num = String(i).padStart(2, '0');
-  foxIdleFrames.push(`/foxy/animation/idle/foxy-idle_${num}.png`);
+  foxIdleFrames.push(`/foxy/animation/idle/foxy-idle_${num}.webp`);
 }
 
 let foxFrame = 0;

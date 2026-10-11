@@ -87,16 +87,13 @@ data.json:
 - засыпает у края
 - просыпается по клику
 
-## 🔐 Приватный доступ через nginx Basic Auth
+## 🔐 Доступ через Nextcloud SSO (oauth2-proxy)
 
-Весь рабочий сервис закрыт паролем на уровне nginx: главная страница, календарь и все API-маршруты. Публичная демонстрация с вымышленными данными находится отдельно по адресу `https://elitepuma.ru/demo/brosil/` и не подключена к базе Brosil.
+Весь рабочий сервис закрыт авторизацией на уровне nginx: главная страница, календарь, статика и все API-маршруты. Публичная демонстрация с вымышленными данными находится отдельно по адресу `https://elitepuma.ru/demo/brosil/` и не подключена к базе Brosil.
 
-### 1. Установка утилиты
+Авторизация производится через Nextcloud OpenID Connect: `oauth2-proxy` (см. `oauth2-proxy-brosil.service`) выпускает сессионную cookie, а nginx проверяет её через `auth_request` на `/oauth2/auth`. Если вы вошли в `cloud.elitepuma.ru`, доступ в `brosil.elitepuma.ru` открывается без ввода пароля.
 
-```bash
-sudo apt install apache2-utils -y
-sudo htpasswd -c /etc/nginx/.brosil_auth elisey
-```
+Статика (`/foxy/`, `*.css`, `*.js`) кэшируется браузером (`Cache-Control: public, max-age=604800`), а HTML и API — нет (`no-store`).
 
 ## Конфигурация nginx
 

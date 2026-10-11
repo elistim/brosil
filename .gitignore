@@ -4,3 +4,4 @@ __pycache__/
 data.json
 trackers.json
 .env
+venv.old/

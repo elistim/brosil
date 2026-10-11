@@ -1,15 +1,76 @@
 server {
     server_name brosil.elitepuma.ru;
 
-    auth_basic "Private tracker";
-    auth_basic_user_file /etc/nginx/.brosil_auth;
-
     add_header Cache-Control "private, no-store" always;
 
-    location / {
+    location /oauth2/ {
+        proxy_pass http://127.0.0.1:4181;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Auth-Request-Redirect $scheme://$host$request_uri;
+    }
+
+    location = /oauth2/auth {
+        proxy_pass http://127.0.0.1:4181/oauth2/auth;
+
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location @oauth2_signin {
+        return 302 /oauth2/start?rd=$scheme://$host$request_uri;
+    }
+
+    location ^~ /foxy/ {
+        auth_request /oauth2/auth;
+        error_page 401 = @oauth2_signin;
+
+        add_header Cache-Control "public, max-age=604800";
+
         proxy_pass http://127.0.0.1:8090;
         proxy_set_header Host $host;
-        proxy_set_header X-Remote-User $remote_user;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~* \.(css|js)$ {
+        auth_request /oauth2/auth;
+        error_page 401 = @oauth2_signin;
+
+        add_header Cache-Control "public, max-age=604800";
+
+        proxy_pass http://127.0.0.1:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        auth_request /oauth2/auth;
+        error_page 401 = @oauth2_signin;
+
+        auth_request_set $auth_user  $upstream_http_x_auth_request_user;
+        auth_request_set $auth_email $upstream_http_x_auth_request_email;
+
+        proxy_pass http://127.0.0.1:8090;
+
+        proxy_set_header Host $host;
+
+        # Временно сохраняем старого пользователя,
+        # чтобы не потерялись старые записи brosil
+        proxy_set_header X-Remote-User "elisey";
+        proxy_set_header X-Remote-Email $auth_email;
+
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
